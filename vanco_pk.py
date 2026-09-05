@@ -19,6 +19,7 @@ from typing import Dict, Any, List, Optional
 def calculate_metrics(**kwargs) -> Dict[str, Any]:
     """
     Core domain algorithm for vancomycin-trough-peak-steady-state.
+    Computes a weighted score from numeric inputs and returns clinical classification.
     """
     params = {}
     for k, v in kwargs.items():
@@ -30,14 +31,17 @@ def calculate_metrics(**kwargs) -> Dict[str, Any]:
 
     # Deterministic domain logic
     numeric_vals = [val for val in params.values() if isinstance(val, (int, float))]
-    primary_val = numeric_vals[0] if numeric_vals else 1.0
 
+    if not numeric_vals:
+        raise ValueError("At least one numeric parameter is required (e.g., v1, v2, v3)")
+
+    primary_val = numeric_vals[0]
     score = primary_val
     for idx, nv in enumerate(numeric_vals[1:], start=2):
         score += nv * (1.0 / idx)
 
     rounded_score = round(score, 2)
-    
+
     # Classification / tiering
     if rounded_score < 10.0:
         tier = "Low / Standard"
@@ -65,11 +69,32 @@ def process_single(args) -> None:
     print(json.dumps(res, indent=2))
 
 
+def _validate_safe_path(path_str: str) -> str:
+    """Prevent path traversal by rejecting paths that escape via parent-dir references."""
+    import os.path
+    normalized = os.path.normpath(path_str)
+    # Reject paths that try to traverse above the current directory
+    if normalized.startswith(".."):
+        raise ValueError(f"Path traversal attempt detected: {path_str}")
+    return normalized
+
+
 def process_batch(input_csv: str, output_csv: str) -> None:
-    with open(input_csv, mode="r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        fieldnames = list(reader.fieldnames or [])
-        rows = list(reader)
+    safe_input = _validate_safe_path(input_csv)
+    safe_output = _validate_safe_path(output_csv)
+
+    try:
+        with open(safe_input, mode="r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            fieldnames = list(reader.fieldnames or [])
+            rows = list(reader)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Input CSV file not found: {safe_input}")
+    except PermissionError:
+        raise PermissionError(f"Permission denied reading input CSV: {safe_input}")
+
+    if not fieldnames:
+        raise ValueError(f"Input CSV has no headers: {safe_input}")
 
     out_fields = fieldnames + ["score", "classification", "clinical_recommendation"]
     out_rows = []
@@ -82,12 +107,15 @@ def process_batch(input_csv: str, output_csv: str) -> None:
         row_dict["clinical_recommendation"] = calc_res["clinical_recommendation"]
         out_rows.append(row_dict)
 
-    with open(output_csv, mode="w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=out_fields)
-        writer.writeheader()
-        writer.writerows(out_rows)
+    try:
+        with open(safe_output, mode="w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=out_fields)
+            writer.writeheader()
+            writer.writerows(out_rows)
+    except PermissionError:
+        raise PermissionError(f"Permission denied writing output CSV: {safe_output}")
 
-    print(f"Processed {len(out_rows)} records -> {output_csv}")
+    print(f"Processed {len(out_rows)} records -> {safe_output}")
 
 
 def main(argv=None):
