@@ -56,7 +56,7 @@ def main(argv=None):
         dossier = supervisor.process_task(payload)
         print("=" * 80)
         print(f"  VANCOMYCIN TROUGH PEAK STEADY STATE")
-        print(f"  Domain: Clinical Pharmacology & Pharmacogenomics | Standard: CPIC Level A / FDA Guidance / ISMP Safety Standards")
+        print(f"  Domain: Clinical Pharmacology & Pharmacogenomics | Standard: Demonstration-only rules; not clinical guidance")
         print(f"  Dossier ID: {dossier.dossier_id} | Urgency: [{dossier.overall_urgency.value}]")
         print("=" * 80)
         for a in dossier.alerts:
