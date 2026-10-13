@@ -1,7 +1,7 @@
 """
-Vancomycin Trough Peak Steady State — Enterprise Automated Analytical Suite.
+Vancomycin Trough Peak Steady State — Demonstration-only operations suite; distinct from the PK simulator.
 Domain: Clinical Pharmacology & Pharmacogenomics
-Standard: CPIC Level A / FDA Guidance / ISMP Safety Standards
+Standard: Demonstration-only rules; not clinical guidance
 
 """
 __version__ = "3.0.0-ENTERPRISE"
