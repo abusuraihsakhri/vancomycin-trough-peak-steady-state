@@ -75,5 +75,5 @@ class SystemSupervisor:
 
     def query_supervisory_chat(self, query: str) -> str:
         PHIGuard.assert_no_phi(query)
-        prompt = f"Supervisor inquiry for Vancomycin Trough Peak Steady State under CPIC Level A / FDA Guidance / ISMP Safety Standards: {query}"
+        prompt = f"Supervisor inquiry for Vancomycin Trough Peak Steady State under Demonstration-only rules; not clinical guidance: {query}"
         return self.llm.invoke(prompt)

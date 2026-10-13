@@ -1,7 +1,7 @@
 """
 Pydantic v2 schemas and data definitions for Vancomycin Trough Peak Steady State.
 Domain: Clinical Pharmacology & Pharmacogenomics
-Standard: CPIC Level A / FDA Guidance / ISMP Safety Standards
+Standard: Demonstration-only rules; not clinical guidance
 """
 import datetime
 from enum import Enum
@@ -39,7 +39,7 @@ class AgentAlert(BaseModel):
     summary: str
     technical_details: str
     actionable_remediation: str
-    standard_reference: str = "CPIC Level A / FDA Guidance / ISMP Safety Standards"
+    standard_reference: str = "Demonstration-only rules; not clinical guidance"
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -57,7 +57,7 @@ class ConsensusDossier(BaseModel):
     total_alerts: int
     critical_alerts_count: int
     alerts: List[AgentAlert]
-    standard_reference: str = "CPIC Level A / FDA Guidance / ISMP Safety Standards"
+    standard_reference: str = "Demonstration-only rules; not clinical guidance"
     consensus_summary: str
     audit_hash: str
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())

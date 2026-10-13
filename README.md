@@ -1,151 +1,75 @@
-# Vancomycin Trough Peak Steady State
+# Vancomycin steady-state PK simulator
 
-> **Domain:** Clinical Pharmacology & Precision Pharmacotherapy  
-> **Reference Guidelines:** CPIC Guidelines, FDA Pharmacogenomic Biomarkers
+A one-compartment, first-order, repeated IV infusion simulator for **educational and research use**. Estimates theoretical steady-state peak, trough, selected post-infusion concentration, 24-hour AUC, clearance, and elimination half-life from user-supplied PK parameters.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
+**Not a clinical dosing tool.** It does not infer renal function, fit drug concentration measurements, perform Bayesian estimation, model distribution phases, or recommend dosing. Stable PK and previously estimated elimination rate and volume are assumed.
 
----
+## Browser application
 
-## 📖 What It Does
+The static simulator is in [`web/index.html`](web/index.html) and [`web/pk.mjs`](web/pk.mjs). It can be hosted on GitHub Pages or any static host, with no backend. The live Pages URL will be added here after deployment is verified.
 
-Vancomycin 1-Compartment PK Simulator evaluates dosing parameters and classifies clinical risk based on a weighted scoring algorithm. It provides:
+To use locally, from the repository root:
 
-- Single-case evaluation via CLI
-- Batch CSV processing
-- FastAPI REST API with Prometheus metrics
-- HMAC-SHA256 tamper-evident audit trail
-- Zero-PHI outbound guard (blocks SSNs, MRNs, phone numbers, etc.)
-
-Author: Dr. Abu Suraih Sakhri  
-License: MIT
-
----
-
-## ⚙️ Key Features
-
-### Core PK Module (`vanco_pk.py`)
-- **`calculate_metrics(**kwargs)`** — Computes a weighted score from numeric parameters (v1, v2, v3) and returns clinical classification (Low/Moderate/High).
-- **`process_single(args)`** — Evaluates a single case from CLI arguments.
-- **`process_batch(input_csv, output_csv)`** — Processes a CSV of cases and appends score/classification columns.
-
-### Enterprise Agent Suite (`agents/`)
-- **`SystemSupervisor`** — Orchestrates multi-worker task evaluation with PHI validation.
-- **Specialized Workers** — QC Invariant, Safety Escalation, Protocol Conformance.
-- **`AuditLogger`** — Cryptographic HMAC-SHA256 chained audit trail.
-- **`PHIGuard`** — Outbound PHI detection and redaction.
-
-### API Server (`agents/api.py`)
-- `GET /health` — Service health check
-- `GET /metrics` — Prometheus operational metrics
-- `POST /api/audit` — Submit task for evaluation
-- `POST /api/chat` — Supervisory chat endpoint
-- `GET /api/audit/logs` — Retrieve and verify audit trail
-
----
-
-## 💻 Quickstart
-
-### Installation
 ```bash
-pip install fastapi uvicorn pydantic pytest
+python -m http.server 8000 --directory web
 ```
 
-### CLI Usage
+Open `http://localhost:8000/`. Enter a hypothetical dose (mg), dosing interval (h), infusion duration (h), elimination rate (h⁻¹), volume of distribution (L), and optional sample time after infusion completion (h). Select **Calculate** to see the results and a one-interval concentration curve. CSV export contains only the entered numerical inputs and calculated outputs.
 
-#### Single Case Evaluation
-```bash
-python vanco_pk.py single --v1 14.5 --v2 4.2 --v3 1.8
-```
+The browser app uses JavaScript without third-party packages, external calculation services, cookies, or persistent storage. Do not enter patient identifiers.
 
-#### Batch CSV Processing
+## Python calculations
+
+Python 3.10+ is sufficient for the core calculator:
+
 ```bash
+python vanco_pk.py single --dose-mg 1000 --interval-h 12 --infusion-h 1 --elimination-rate-h 0.1 --volume-l 50
 python vanco_pk.py batch -i sample.csv -o results.csv
 ```
 
-#### Enterprise Supervisor CLI
-```bash
-# Audit a single task
-python cli.py audit --task-id TASK-001 --primary 28.5 --secondary 14.2
+The example predicts an AUC24 of 400 mg·h/L, end-of-infusion peak of approximately 27.24 mg/L, and predose trough of approximately 9.07 mg/L. These are synthetic PK assumptions, not patient values.
 
-# Batch processing
-python cli.py batch -i sample.csv -o results.csv
+The batch CSV must contain `dose_mg`, `interval_h`, `infusion_h`, `elimination_rate_h`, and `volume_l`; `sample_after_infusion_h` is optional. Malformed input stops the batch before results are written. Unsafe spreadsheet formula prefixes in retained input text are escaped. Avoid identifiable clinical data.
 
-# Verify audit trail integrity
-python cli.py verify-audit
+### Model
 
-# Start API server
-python cli.py serve --host 127.0.0.1 --port 8000
-```
+For infusion duration `T`, interval `tau`, dose `D`, first-order elimination constant `k`, and apparent volume `V`:
 
-### Input Data Schema (for vanco_pk batch)
+- `CL = k × V`.
+- `Cpeak,ss = [D / (T × CL)] × [ (1 − exp(−kT)) / (1 − exp(−k tau)) ]`.
+- `Ctrough,ss = Cpeak,ss × exp(−k(tau − T))`.
+- `AUC24 = 24 D / (tau × CL)`.
+- `t½ = ln(2)/k`.
 
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `Patient_ID` | Patient identifier | Required |
-| `v1` | Primary PK parameter | Required |
-| `v2` | Secondary PK parameter | Optional |
-| `v3` | Tertiary PK parameter | Optional |
+An optional modeled sample is `Cpeak,ss × exp(−k t)` for `t` hours after infusion completion, before the next dose. The calculations assume repeated identical infusions and immediate distribution into one compartment. They do not establish that a patient has reached steady state.
 
----
+## Additional components
 
-## 🛡️ Security Architecture
+The repository retains an independent **demonstration-only** supervisor/agent suite (`agents/`, `cli.py`) with generic operational rules; these rules are **not validated clinical vancomycin thresholds**. `enrichment.py` contains conceptual threshold-based placeholders, **not** working Bayesian, two-compartment, renal dose, or target-attainment implementations.
 
-* **Zero-PHI Outbound Interceptor:** AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation.
-* **Path Traversal Protection:** All file paths validated against absolute paths and parent-directory traversal.
-* **Secure Secret Management:** Audit signing key sourced from `AUDIT_SECRET_KEY` environment variable (no hardcoded defaults).
-
----
-
-## 🧪 Testing
+Optional API dependencies:
 
 ```bash
-# Run all tests
-pytest -v
-
-# Run with coverage
-pytest -v --cov=.
+python -m pip install "fastapi>=0.115,<1" "uvicorn>=0.30,<1" "pydantic>=2,<3"
+python cli.py serve
 ```
 
-### Test Coverage
-- `test_vanco_pk.py` — Core PK calculation and batch processing
-- `tests/test_enrichment.py` — Enrichment module threshold escalation
-- `tests/test_vancomycin_trough_peak_steady_state.py` — PHI guard, workers, supervisor consensus, audit integrity
+API routes include `GET /health`, `GET /metrics` (JSON), `POST /api/pk`, and demonstration-only `/api/audit`, `/api/chat`, `/api/audit/logs`. The mock chat provider is not a clinical verification service. The audit-chain HMAC is held in memory with an ephemeral random key unless `AUDIT_SECRET_KEY` is configured. The regex identifier guard is best-effort and does **not** guarantee HIPAA de-identification.
 
----
-
-## 🐳 Container Deployment
-
-### Docker
-```bash
-docker build -t vancomycin-trough-peak-steady-state .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key vancomycin-trough-peak-steady-state
-```
-
-### Docker Compose
-```bash
-cp .env.example .env
-# Edit .env to set your AUDIT_SECRET_KEY
-docker compose up -d
-```
-
----
-
-## 📊 Simulation & Benchmarking
+## Tests
 
 ```bash
-# Run high-throughput simulation (100 tasks)
-python simulator.py 100
-
-# Run benchmark suite
-python -m pytest tests/ -v
+python -m pip install "pytest>=8,<10" "fastapi>=0.115,<1" "pydantic>=2,<3"
+python -m pytest -q
+node --test web/pk.test.mjs
 ```
 
----
+Python tests exercise equations, edge cases, safe CSV handling, and existing agent behavior. Node.js 22+ runs the browser calculation unit tests. The site is designed for current Chromium, Firefox, and Safari releases that support JavaScript modules.
 
-## 📄 License
+## Clinical context
 
-MIT License — see [LICENSE](LICENSE) for details.
+The [2020 ASHP/IDSA/PIDS/SIDP consensus guidance](https://www.idsociety.org/practice-guideline/vancomycin/) supports AUC-guided vancomycin monitoring for serious MRSA infections, using an AUC24/MIC target of 400–600 assuming MIC = 1 mg/L. Trough-only targets of 15–20 mg/L are no longer recommended for that indication. This simulator does **not** determine target attainment or individualize therapy.
+
+## License
+
+[MIT](LICENSE).
