@@ -3,7 +3,8 @@ FastAPI REST API Server for Vancomycin Trough Peak Steady State.
 """
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from vanco_pk import calculate_metrics
 from .base import AuditLogger, PHIGuard
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
@@ -53,3 +54,22 @@ def api_chat(req: ChatRequest):
 @app.get("/api/audit/logs")
 def api_audit_logs():
     return {"audit_trail": AuditLogger.get_trail(), "verified": AuditLogger.verify_integrity()}
+
+
+class PKRequest(BaseModel):
+    """Externally supplied one-compartment parameters; no patient identifiers."""
+    dose_mg: float = Field(gt=0, allow_inf_nan=False)
+    interval_h: float = Field(gt=0, allow_inf_nan=False)
+    infusion_h: float = Field(gt=0, allow_inf_nan=False)
+    elimination_rate_h: float = Field(gt=0, allow_inf_nan=False)
+    volume_l: float = Field(gt=0, allow_inf_nan=False)
+    sample_after_infusion_h: float = Field(default=0, ge=0, allow_inf_nan=False)
+
+
+@app.post("/api/pk")
+def api_pk(payload: PKRequest):
+    """Educational PK simulation, not clinical dose optimization."""
+    try:
+        return calculate_metrics(**payload.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
