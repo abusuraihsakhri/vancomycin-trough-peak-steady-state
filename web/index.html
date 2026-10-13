@@ -1,236 +1,148 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vancomycin Trough Peak Steady State — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Vancomycin steady-state PK simulator</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, sans-serif; color: #1a2837; background: #f5f7fa; line-height: 1.48; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 3rem; }
+    header { margin-bottom: 1.4rem; }
+    h1 { font-size: clamp(1.5rem, 3vw, 2.2rem); line-height: 1.2; margin: 0 0 .45rem; }
+    h2 { font-size: 1.15rem; margin: 0 0 1rem; }
+    p { margin: .35rem 0 .85rem; }
+    .muted, small { color: #526273; }
+    .notice { border-left: 4px solid #915f09; background: #fff6e6; padding: .85rem 1rem; margin: 1rem 0 1.5rem; }
+    .layout { display: grid; grid-template-columns: minmax(275px, .86fr) minmax(0, 1.14fr); gap: 1.2rem; align-items: start; }
+    .panel { padding: 1.25rem; background: white; border: 1px solid #dce3ec; border-radius: 12px; box-shadow: 0 2px 8px #1e293b0b; }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+    .field { display: flex; flex-direction: column; gap: .3rem; }
+    .field label { font-weight: 600; font-size: .88rem; }
+    input { width: 100%; font: inherit; border: 1px solid #8999aa; border-radius: 7px; padding: .55rem .65rem; }
+    input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid #398dd6; outline-offset: 2px; }
+    .actions { display: flex; gap: .65rem; flex-wrap: wrap; margin-top: 1.15rem; }
+    button { border: 0; border-radius: 7px; padding: .65rem 1rem; font: inherit; font-weight: 650; cursor: pointer; }
+    button.primary { background: #145a8d; color: white; }
+    button.secondary { background: #e8eff6; color: #154368; }
+    button:hover { filter: brightness(.95); }
+    .error { color: #a41e22; font-weight: 600; min-height: 1.4em; }
+    .results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; margin-bottom: 1.2rem; }
+    .value { background: #f3f7fc; border: 1px solid #e1eaf4; padding: .75rem; border-radius: 8px; }
+    .value span { display: block; color: #526273; font-size: .8rem; }
+    .value strong { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+    .chart { width: 100%; height: auto; border: 1px solid #e1eaf4; border-radius: 8px; background: #fbfdff; }
+    .chart text { font: 12px system-ui, sans-serif; fill: #526273; }
+    .chart .axis { stroke: #91a3b5; }
+    .chart .line { fill: none; stroke: #145a8d; stroke-width: 3; }
+    .footer { margin-top: 1.5rem; font-size: .9rem; color: #425266; }
+    a { color: #145a8d; }
+    [hidden] { display: none !important; }
+    @media (max-width: 740px) { .layout { grid-template-columns: 1fr; } main { padding-top: 1.1rem; } }
+    @media (max-width: 390px) { .fields { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Vancomycin Trough Peak Steady State</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
+<main>
+  <header>
+    <h1>Vancomycin steady-state PK simulator</h1>
+    <p class="muted">One-compartment, first-order elimination, intermittent IV infusion · Local, deterministic calculations</p>
+  </header>
+  <div class="notice" role="note"><strong>Educational/research use only.</strong> Predictions assume stable pharmacokinetics and pre-estimated elimination rate and distribution volume. No patient-specific dose is recommended. Do not use these outputs as the sole basis for treatment or therapeutic drug monitoring.</div>
+  <div class="layout">
+    <section class="panel" aria-labelledby="inputs-heading">
+      <h2 id="inputs-heading">Regimen and PK inputs</h2>
+      <form id="pk-form" novalidate>
+        <div class="fields">
+          <div class="field"><label for="dose_mg">Dose (mg)</label><input id="dose_mg" name="dose_mg" type="number" min="0" step="any" required value="1000"></div>
+          <div class="field"><label for="interval_h">Dosing interval (h)</label><input id="interval_h" name="interval_h" type="number" min="0" step="any" required value="12"></div>
+          <div class="field"><label for="infusion_h">Infusion duration (h)</label><input id="infusion_h" name="infusion_h" type="number" min="0" step="any" required value="1"></div>
+          <div class="field"><label for="elimination_rate_h">Elimination rate, k (h⁻¹)</label><input id="elimination_rate_h" name="elimination_rate_h" type="number" min="0" step="any" required value="0.1"></div>
+          <div class="field"><label for="volume_l">Volume of distribution (L)</label><input id="volume_l" name="volume_l" type="number" min="0" step="any" required value="50"></div>
+          <div class="field"><label for="sample_after_infusion_h">Sample after infusion (h)</label><input id="sample_after_infusion_h" name="sample_after_infusion_h" type="number" min="0" step="any" required value="0"></div>
         </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
+        <div class="actions"><button class="primary" type="submit">Calculate</button><button class="secondary" type="button" id="reset">Reset example</button></div>
+      </form>
+      <p id="error" class="error" role="alert" aria-live="polite"></p>
+      <small>Example inputs are hypothetical. The sample time is measured from the end of infusion and cannot extend beyond the next scheduled dose.</small>
+    </section>
+    <section class="panel" aria-labelledby="outputs-heading">
+      <h2 id="outputs-heading">Predicted steady-state exposure</h2>
+      <div id="output" hidden>
+        <div class="results" aria-live="polite">
+          <div class="value"><span>Peak · end of infusion</span><strong id="peak"></strong></div>
+          <div class="value"><span>Trough · before next dose</span><strong id="trough"></strong></div>
+          <div class="value"><span>24-hour AUC</span><strong id="auc"></strong></div>
+          <div class="value"><span>Concentration at sample time</span><strong id="sample"></strong></div>
+          <div class="value"><span>Clearance</span><strong id="clearance"></strong></div>
+          <div class="value"><span>Elimination half-life</span><strong id="half"></strong></div>
         </div>
-    </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Vancomycin Trough Peak Steady State Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "vancomycin-trough-peak-steady-state",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+        <svg class="chart" id="curve" viewBox="0 0 570 260" role="img" aria-label="Steady-state vancomycin concentration over one dosing interval"><line class="axis" x1="58" y1="18" x2="58" y2="217"/><line class="axis" x1="58" y1="217" x2="553" y2="217"/><text x="10" y="20">mg/L</text><text id="ymax" x="10" y="48"></text><text x="55" y="239">0</text><text id="xmax" x="495" y="239"></text><text x="245" y="253">Time (h)</text><path class="line" id="curve-path" d=""/></svg>
+        <p class="muted" id="steady"></p>
+        <div class="actions"><button class="secondary" type="button" id="download">Export result CSV</button></div>
+      </div>
+      <p id="empty" class="muted">Enter parameters and select Calculate.</p>
+    </section>
+  </div>
+  <div class="footer">
+    <p><strong>Interpretation:</strong> The 2020 ASHP/IDSA/PIDS/SIDP guidance favors AUC-guided monitoring for serious MRSA infections; a 400–600 mg·h/L AUC target assumes an MIC of 1 mg/L. This simplified simulator does not implement Bayesian estimation, renal adjustment, or individualized target assessment.</p>
+    <p><a href="https://www.idsociety.org/practice-guideline/vancomycin/" target="_blank" rel="noopener noreferrer">Vancomycin monitoring consensus guideline</a> · No inputs are transmitted, stored, or sent to an external service. All calculations occur in this browser.</p>
+  </div>
+</main>
+<script type="module">
+  import {calculatePK, concentrationAtTime} from './pk.mjs';
+  const ids = ['dose_mg', 'interval_h', 'infusion_h', 'elimination_rate_h', 'volume_l', 'sample_after_infusion_h'];
+  const form = document.getElementById('pk-form');
+  const error = document.getElementById('error');
+  const output = document.getElementById('output');
+  const empty = document.getElementById('empty');
+  let previous = null;
+  const format = n => Number(n).toLocaleString(undefined, {maximumFractionDigits: 2});
+  function resetResults() { previous = null; output.hidden = true; empty.hidden = false; }
+  function renderCurve(values, peak) {
+    const maxY = peak * 1.15;
+    const interval = Number(values.interval_h);
+    const points = Array.from({length: 121}, (_, i) => {
+      const t = i * interval / 120;
+      return `${(58 + 495 * i / 120).toFixed(2)},${(217 - 185 * concentrationAtTime(values, t) / maxY).toFixed(2)}`;
+    });
+    document.getElementById('curve-path').setAttribute('d', 'M' + points.join(' L'));
+    document.getElementById('ymax').textContent = format(maxY);
+    document.getElementById('xmax').textContent = format(interval) + ' h';
+  }
+  function calculate(event) {
+    event.preventDefault();
+    error.textContent = '';
+    try {
+      const values = Object.fromEntries(ids.map(id => [id, document.getElementById(id).value]));
+      const r = calculatePK(values);
+      previous = {values, r};
+      const text = {peak: `${format(r.peak_mg_l)} mg/L`, trough: `${format(r.trough_mg_l)} mg/L`, auc: `${format(r.auc24_mg_h_l)} mg·h/L`, sample: `${format(r.sample_mg_l)} mg/L`, clearance: `${format(r.clearance_l_h)} L/h`, half: `${format(r.half_life_h)} h`};
+      for (const [id, value] of Object.entries(text)) document.getElementById(id).textContent = value;
+      document.getElementById('steady').textContent = `Approximately five half-lives: ${format(r.approx_steady_state_h)} h to near steady state (theoretical).`;
+      renderCurve(values, r.peak_mg_l);
+      output.hidden = false;
+      empty.hidden = true;
+    } catch (e) { resetResults(); error.textContent = e.message || 'Unable to calculate'; }
+  }
+  form.addEventListener('submit', calculate);
+  for (const id of ids) document.getElementById(id).addEventListener('input', () => { resetResults(); error.textContent = ''; });
+  document.getElementById('reset').addEventListener('click', () => {
+    for (const [id, value] of Object.entries({dose_mg: 1000, interval_h: 12, infusion_h: 1, elimination_rate_h: 0.1, volume_l: 50, sample_after_infusion_h: 0})) document.getElementById(id).value = value;
+    calculate(new Event('submit'));
+  });
+  document.getElementById('download').addEventListener('click', () => {
+    if (!previous) return;
+    const all = {...previous.values, ...previous.r};
+    const keys = Object.keys(all);
+    const csv = keys.join(',') + '\r\n' + keys.map(k => all[k]).join(',') + '\r\n';
+    const url = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'vancomycin-pk-example.csv'; anchor.click();
+    URL.revokeObjectURL(url);
+  });
+  calculate(new Event('submit'));
+</script>
 </body>
 </html>
